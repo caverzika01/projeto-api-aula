@@ -1,0 +1,42 @@
+name: .NET Build and Test
+
+on: push
+
+run-name: Deploy to ${{ inputs.deploy_target }} by @${{ github.actor }} RM @${{ github.ref }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore All Projects
+      run: |
+        echo "Restoring all projects"
+        for project in $(find . -name "*.csproj"); do
+          echo "Restoring dependencies for $project"
+          dotnet restore "$project"
+        done
+
+    - name: Build All Projects
+      run: |
+        echo "Building all projects"
+        for project in $(find . -name "*.csproj" -not -path "*/Tests/*"); do
+          echo "Building $project"
+          dotnet build "$project" --no-restore --verbosity detailed
+        done
+
+    - name: Test All Projects
+      run: |
+        echo "Testing all projects"
+        for project in $(find . -name "*Test.csproj"); do
+          echo "Running tests for $project"
+          dotnet test "$project" --no-build --verbosity detailed --logger "console;verbosity=detailed"
+        done
